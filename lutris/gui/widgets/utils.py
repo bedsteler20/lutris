@@ -15,6 +15,7 @@ except ImportError:
 
 ICON_SIZE = (32, 32)
 BANNER_SIZE = (184, 69)
+COVER_SIZE = (264, 352)
 
 
 def get_main_window(widget):

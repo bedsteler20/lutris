@@ -14,8 +14,9 @@ from lutris.gui.config.boxes import GameBox, RunnerBox, SystemBox
 from lutris.gui.dialogs import ModelessDialog, DirectoryDialog, ErrorDialog, QuestionDialog
 from lutris.gui.widgets.common import Label, NumberEntry, SlugEntry, VBox
 from lutris.gui.widgets.notifications import send_notification
-from lutris.gui.widgets.utils import BANNER_SIZE, ICON_SIZE, get_pixbuf
+from lutris.gui.widgets.utils import BANNER_SIZE, ICON_SIZE, COVER_SIZE, get_pixbuf
 from lutris.runners import import_runner
+from lutris.services.base import LutrisCoverart
 from lutris.services.lutris import LutrisBanner, LutrisIcon
 from lutris.util import resources, system
 from lutris.util.log import logger
@@ -45,6 +46,7 @@ class GameDialogCommon(ModelessDialog):
         self.runner_dropdown = None
         self.banner_button = None
         self.icon_button = None
+        self.cover_button = None
         self.game_box = None
         self.system_box = None
         self.runner_name = None
@@ -146,7 +148,7 @@ class GameDialogCommon(ModelessDialog):
         runner_box.pack_start(self.runner_dropdown, True, True, 0)
 
         return runner_box
-
+    # ! ADD
     def _get_banner_box(self):
         banner_box = Gtk.Box(spacing=12, margin_right=12, margin_left=12)
 
@@ -175,6 +177,17 @@ class GameDialogCommon(ModelessDialog):
         reset_icon_button.connect("clicked", self.on_custom_image_reset_clicked, "icon")
         banner_box.pack_start(reset_icon_button, False, False, 0)
 
+        self.cover_button = Gtk.Button()
+        self._set_image("cover")
+        self.cover_button.connect("clicked", self.on_custom_image_select, "cover")
+        banner_box.pack_start(self.cover_button, False, False, 0)
+
+        reset_cover_button = Gtk.Button.new_from_icon_name("edit-clear", Gtk.IconSize.MENU)
+        reset_cover_button.set_relief(Gtk.ReliefStyle.NONE)
+        reset_cover_button.set_tooltip_text(_("Remove custom Cover Art"))
+        reset_cover_button.connect("clicked", self.on_custom_image_reset_clicked, "cover")
+        banner_box.pack_start(reset_cover_button, False, False, 0)
+
         return banner_box
 
     def _get_year_box(self):
@@ -192,11 +205,20 @@ class GameDialogCommon(ModelessDialog):
 
     def _set_image(self, image_format):
         image = Gtk.Image()
-        service_media = LutrisBanner() if image_format == "banner" else LutrisIcon()
+
+        if image_format == "banner":
+            service_media = LutrisBanner()
+        elif image_format == "icon":
+            service_media = LutrisIcon()
+        else:
+            service_media = LutrisCoverart()
+
         game_slug = self.game.slug if self.game else ""
         image.set_from_pixbuf(service_media.get_pixbuf_for_game(game_slug))
         if image_format == "banner":
             self.banner_button.set_image(image)
+        elif image_format == "cover":
+            self.cover_button.set_image(image)
         else:
             self.icon_button.set_image(image)
 
@@ -468,6 +490,7 @@ class GameDialogCommon(ModelessDialog):
         return True
 
     def on_custom_image_select(self, _widget, image_type):
+        print("Test")
         dialog = Gtk.FileChooserNative.new(
             _("Please choose a custom image"),
             self,
@@ -486,14 +509,24 @@ class GameDialogCommon(ModelessDialog):
             image_path = dialog.get_filename()
             if image_type == "banner":
                 self.game.has_custom_banner = True
-                dest_path = os.path.join(settings.BANNER_PATH, "%s.jpg" % self.game.slug)
+                dest_path = resources.get_banner_path(self.game.slug)
                 size = BANNER_SIZE
                 file_format = "jpeg"
-            else:
+
+            elif image_type == "icon":
                 self.game.has_custom_icon = True
                 dest_path = resources.get_icon_path(self.game.slug)
                 size = ICON_SIZE
                 file_format = "png"
+            elif image_type == "cover":
+                print("Cover")
+
+                self.game.has_custom_cover = True
+                dest_path = resources.get_cover_path(self.game.slug)
+                size = COVER_SIZE
+                file_format = "jpeg"
+            else:
+                raise ValueError("Unsupported image type %s" % image_type)
             pixbuf = get_pixbuf(image_path, size)
             pixbuf.savev(dest_path, file_format, [], [])
             self._set_image(image_type)
@@ -506,10 +539,13 @@ class GameDialogCommon(ModelessDialog):
     def on_custom_image_reset_clicked(self, _widget, image_type):
         if image_type == "banner":
             self.game.has_custom_banner = False
-            dest_path = os.path.join(settings.BANNER_PATH, "%s.jpg" % self.game.slug)
+            dest_path = resources.get_banner_path(self.game.slug)
         elif image_type == "icon":
             self.game.has_custom_icon = False
             dest_path = resources.get_icon_path(self.game.slug)
+        elif image_type == "cover":
+            self.game.has_custom_cover = False
+            dest_path = resources.get_cover_path(self.game.slug)
         else:
             raise ValueError("Unsupported image type %s" % image_type)
         if os.path.isfile(dest_path):
