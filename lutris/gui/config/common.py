@@ -12,6 +12,7 @@ from lutris.gui import dialogs
 from lutris.gui.config import DIALOG_HEIGHT, DIALOG_WIDTH
 from lutris.gui.config.boxes import GameBox, RunnerBox, SystemBox
 from lutris.gui.dialogs import ModelessDialog, DirectoryDialog, ErrorDialog, QuestionDialog
+from lutris.gui.dialogs.art_picker import ArtPickerDialog
 from lutris.gui.widgets.common import Label, NumberEntry, SlugEntry, VBox
 from lutris.gui.widgets.notifications import send_notification
 from lutris.gui.widgets.utils import BANNER_SIZE, ICON_SIZE, COVER_SIZE, get_pixbuf
@@ -149,11 +150,12 @@ class GameDialogCommon(ModelessDialog):
 
         return runner_box
     # ! ADD
+
     def _get_banner_box(self):
         banner_box = Gtk.Box(spacing=12, margin_right=12, margin_left=12)
 
-        label = Label("")
-        banner_box.pack_start(label, False, False, 0)
+        # label = Label("")
+        # banner_box.pack_start(label, False, False, 0)
 
         self.banner_button = Gtk.Button()
         self._set_image("banner")
@@ -491,6 +493,9 @@ class GameDialogCommon(ModelessDialog):
 
     def on_custom_image_select(self, _widget, image_type):
         print("Test")
+        ArtPickerDialog()
+
+        return
         dialog = Gtk.FileChooserNative.new(
             _("Please choose a custom image"),
             self,
